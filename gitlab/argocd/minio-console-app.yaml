@@ -1,19 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: gitlab-minio-console
-  namespace: argocd
+  name: minio-console
+  namespace: argo-cd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/DarkHawk87/youtube'
-    path: gitlab/minio-console/manifests
+    repoURL: 'https://github.com/BigKAA/youtube'
+    path: "Utils/k3s-dev/manifests/minio-console/"
     targetRevision: master
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: gitlab
+    namespace: minio
   syncPolicy:
     automated:
       prune: true
