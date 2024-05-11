@@ -2,9 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: console
-  labels:
-    name: console
+  name: minio-console
 spec:
   ports:
     - port: 9090
@@ -12,25 +10,26 @@ spec:
     - port: 9443
       name: https
   selector:
-    app: console
+    app: minio-console
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: console
+  name: minio-console
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: console
+      app: minio-console
+      
   template:
     metadata:
       labels:
-        app: console
+        app: minio-console
     spec:
       containers:
-        - name: console
-          image: minio/console:v0.29.0
+        - name: minio-console
+          image: minio/console:v0.30.0
           imagePullPolicy: "IfNotPresent"
           args:
             - server
@@ -39,19 +38,35 @@ spec:
               name: http
           env:
             - name: CONSOLE_MINIO_SERVER
-              value: "http://gitlab-minio:9000"
+              value: "http://minio:9000"
             - name: CONSOLE_PORT
               value: "9090"
+          resources:
+            requests:
+              cpu: "0.4"
+              memory: "256Mi"
+            limits:
+              cpu: "0.8"
+              memory: "512Mi"
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: minioconsole
-  # ## Fix to new versions of ingress controllers
-  # annotations:
-  #   kubernetes.io/ingress.class: "system-ingress"
+  name: minio-console
+  annotations:
+    cert-manager.io/cluster-issuer: dev-ca-issuer
+    cert-manager.io/common-name: minio.dark.local
+    cert-manager.io/subject-organizations: "home dev lab"
+    cert-manager.io/subject-countries: "KZ"
+    cert-manager.io/subject-localities: "Almaty"
+    cert-manager.io/duration: "9125h"
+    cert-manager.io/renew-before: "360h"
+    cert-manager.io/usages: "server auth"
+    cert-manager.io/private-key-algorithm: RSA
+    cert-manager.io/private-key-encoding: "PKCS8"
+    cert-manager.io/private-key-size: "4096"
+    cert-manager.io/private-key-rotation-policy: Always
 spec:
-  ## Fix to new versions of ingress controllers
   ingressClassName: "system-ingress"
   rules:
     - host: "minio.dark.local"
@@ -61,6 +76,10 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: console
+                name: minio-console
                 port:
                   name: http
+  tls:
+    - hosts:
+      - minio.dark.local
+      secretName: minio-console-tls
